@@ -1,0 +1,119 @@
+import * as path from 'path';
+import * as vscode from 'vscode';
+import {
+    LanguageClient,
+    LanguageClientOptions,
+    ServerOptions,
+} from 'vscode-languageclient/node';
+import { MetricsPanel } from './views/metricsPanel';
+
+let client: LanguageClient;
+
+export function activate(context: vscode.ExtensionContext): void {
+    const serverJar = context.asAbsolutePath(
+        path.join('server', 'target', 'java-analyzer-server-1.0-SNAPSHOT.jar')
+    );
+
+    const serverOptions: ServerOptions = {
+        command: 'java',
+        args: ['-jar', serverJar],
+    };
+
+    // redhat.java の有無を確認して Java 定義ジャンプの有効化を決定
+    const redhatInstalled = !!vscode.extensions.getExtension('redhat.java');
+    const cfg = vscode.workspace.getConfiguration('javaAnalyzer');
+    const javaDefMode = cfg.get<string>('javaDefinition', 'auto');
+    const provideJavaDef =
+        javaDefMode === 'enabled' ||
+        (javaDefMode === 'auto' && !redhatInstalled);
+
+    const documentSelector: LanguageClientOptions['documentSelector'] = [
+        // XML マッパーファイル（redhat.java と競合しないので常に対象）
+        { scheme: 'file', pattern: '**/mapper/**/*.xml' },
+        { scheme: 'file', pattern: '**/mappers/**/*.xml' },
+    ];
+    if (provideJavaDef) {
+        documentSelector.push({ scheme: 'file', language: 'java' });
+    }
+
+    const clientOptions: LanguageClientOptions = {
+        documentSelector,
+        synchronize: {
+            fileEvents: vscode.workspace.createFileSystemWatcher('**/*.{java,xml}'),
+        },
+    };
+
+    client = new LanguageClient(
+        'javaAnalyzer',
+        'Java Analyzer',
+        serverOptions,
+        clientOptions
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('javaAnalyzer.analyzeFile', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showWarningMessage('Java ファイルを開いてください。');
+                return;
+            }
+            const json = await client.sendRequest('workspace/executeCommand', {
+                command: 'javaAnalyzer/analyzeFile',
+                arguments: [editor.document.uri.toString()],
+            }) as string;
+            try {
+                const report = JSON.parse(json);
+                if (report.error) {
+                    vscode.window.showErrorMessage(`Java Analyzer: ${report.error}`);
+                } else {
+                    MetricsPanel.show(report);
+                }
+            } catch {
+                vscode.window.showErrorMessage(`Java Analyzer: 解析結果の解析に失敗しました`);
+            }
+        }),
+
+        vscode.commands.registerCommand('javaAnalyzer.analyzeWorkspace', async () => {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+            if (!root) {
+                vscode.window.showWarningMessage('ワークスペースを開いてください。');
+                return;
+            }
+            await vscode.window.withProgress(
+                { location: vscode.ProgressLocation.Notification, title: 'Java Analyzer: 解析中...' },
+                async () => {
+                    const json = await client.sendRequest('workspace/executeCommand', {
+                        command: 'javaAnalyzer/analyzeWorkspace',
+                        arguments: [root],
+                    }) as string;
+                    try {
+                        const report = JSON.parse(json);
+                        if (report.error) {
+                            vscode.window.showErrorMessage(`Java Analyzer: ${report.error}`);
+                        } else {
+                            MetricsPanel.showWorkspace(report);
+                        }
+                    } catch {
+                        vscode.window.showErrorMessage('Java Analyzer: 解析結果の解析に失敗しました');
+                    }
+                }
+            );
+        }),
+
+        // 疎通確認用（開発時のみ使用）
+        vscode.commands.registerCommand('javaAnalyzer.ping', async () => {
+            const result = await client.sendRequest('workspace/executeCommand', {
+                command: 'javaAnalyzer/ping',
+                arguments: [],
+            });
+            vscode.window.showInformationMessage(`ping → ${String(result)}`);
+        })
+    );
+
+    client.start();
+}
+
+export function deactivate(): Thenable<void> | undefined {
+    if (!client) { return undefined; }
+    return client.stop();
+}
