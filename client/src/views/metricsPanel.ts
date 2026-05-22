@@ -71,7 +71,7 @@ export class MetricsPanel {
         MetricsPanel.open('Java Analyzer — Workspace', buildWorkspaceHtml(report));
     }
 
-    // 後方互換
+    // Backwards compatibility
     static show(report: FileReport): void { MetricsPanel.showFile(report); }
 
     private static open(title: string, html: string): void {
@@ -98,7 +98,7 @@ export class MetricsPanel {
 function buildFileHtml(r: FileReport): string {
     return wrapHtml(
         `<h2>Java Analyzer — File</h2>
-         <p><b>${r.filePath}</b> — 総行数: ${r.totalLines} / クラス数: ${r.classes?.length ?? 0}</p>
+         <p><b>${r.filePath}</b> — Total lines: ${r.totalLines} / Classes: ${r.classes?.length ?? 0}</p>
          ${warningsHtml(r.warnings)}
          ${classTablesHtml(r.classes)}`
     );
@@ -113,75 +113,75 @@ function buildWorkspaceHtml(r: WorkspaceReport): string {
 
     return wrapHtml(`
         <h2>Java Analyzer — Workspace</h2>
-        <p>ファイル数: ${fileCount} / クラス数: ${classCount} / メソッド数: ${methodCount}</p>
+        <p>Files: ${fileCount} / Classes: ${classCount} / Methods: ${methodCount}</p>
         ${warningsHtml(r.warnings)}
 
-        <h3>🌐 エンドポイント (${sp?.endpoints?.length ?? 0})</h3>
+        <h3>🌐 Endpoints (${sp?.endpoints?.length ?? 0})</h3>
         ${endpointsHtml(sp?.endpoints)}
 
-        <h3>🫘 Bean 一覧 (${sp?.beans?.length ?? 0})</h3>
+        <h3>🫘 Beans (${sp?.beans?.length ?? 0})</h3>
         ${beansHtml(sp?.beans)}
 
-        <h3>🔗 DI グラフ (${sp?.diGraph?.length ?? 0})</h3>
+        <h3>🔗 DI Graph (${sp?.diGraph?.length ?? 0})</h3>
         ${diGraphHtml(sp?.diGraph)}
 
-        <h3>💾 @Transactional メソッド (${sp?.transactionalMethods?.length ?? 0})</h3>
+        <h3>💾 @Transactional Methods (${sp?.transactionalMethods?.length ?? 0})</h3>
         ${transactionalHtml(sp?.transactionalMethods)}
 
-        <h3>🗄 MyBatis XML マッパー (${r.mybatisReport?.xmlMappers?.length ?? 0} ファイル)</h3>
+        <h3>🗄 MyBatis XML Mappers (${r.mybatisReport?.xmlMappers?.length ?? 0} files)</h3>
         ${mybatisHtml(r.mybatisReport)}
 
-        <h3>🔴 デッドコード候補 (${r.deadCodeCandidates?.length ?? 0})</h3>
+        <h3>🔴 Dead Code Candidates (${r.deadCodeCandidates?.length ?? 0})</h3>
         ${codeListHtml(r.deadCodeCandidates)}
 
-        <h3>🚪 エントリーポイント候補 (${r.entryPointCandidates?.length ?? 0})</h3>
+        <h3>🚪 Entry Point Candidates (${r.entryPointCandidates?.length ?? 0})</h3>
         ${codeListHtml(r.entryPointCandidates)}
 
-        <h3>📋 重複ブロック (${r.duplicateBlocks?.length ?? 0})</h3>
+        <h3>📋 Duplicate Blocks (${r.duplicateBlocks?.length ?? 0})</h3>
         ${duplicateBlocksHtml(r.duplicateBlocks)}
 
-        <h3>📄 ファイル別メトリクス</h3>
+        <h3>📄 File Metrics</h3>
         ${r.files?.map(f =>
-            `<details><summary>${f.filePath} (${f.totalLines} 行)</summary>
+            `<details><summary>${f.filePath} (${f.totalLines} lines)</summary>
              ${warningsHtml(f.warnings)}${classTablesHtml(f.classes)}</details>`
         ).join('') ?? ''}
     `);
 }
 
 function endpointsHtml(endpoints?: EndpointInfo[]): string {
-    if (!endpoints?.length) return '<p class="none">なし</p>';
+    if (!endpoints?.length) return '<p class="none">None</p>';
     const rows = endpoints.map(e =>
         `<tr><td><b>${e.httpMethod}</b></td><td>${e.path}</td>
              <td>${e.handlerClass}</td><td>${e.handlerMethod}</td><td>${e.line}</td></tr>`
     ).join('');
-    return `<table><thead><tr><th>HTTP</th><th>パス</th><th>クラス</th><th>メソッド</th><th>行</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<table><thead><tr><th>HTTP</th><th>Path</th><th>Class</th><th>Method</th><th>Line</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function beansHtml(beans?: BeanInfo[]): string {
-    if (!beans?.length) return '<p class="none">なし</p>';
+    if (!beans?.length) return '<p class="none">None</p>';
     const rows = beans.map(b =>
         `<tr><td>${b.className}</td><td>${b.beanType}</td></tr>`
     ).join('');
-    return `<table><thead><tr><th>クラス名</th><th>種別</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<table><thead><tr><th>Class Name</th><th>Type</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function diGraphHtml(edges?: DiEdge[]): string {
-    if (!edges?.length) return '<p class="none">なし</p>';
+    if (!edges?.length) return '<p class="none">None</p>';
     const rows = edges.map(e =>
         `<tr><td>${e.from}</td><td>${e.to}</td><td>${e.fieldName}</td><td>${e.injectionType}</td></tr>`
     ).join('');
-    return `<table><thead><tr><th>依存元</th><th>注入型</th><th>フィールド名</th><th>注入方式</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<table><thead><tr><th>From</th><th>To</th><th>Field Name</th><th>Injection Type</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function transactionalHtml(methods?: string[]): string {
-    if (!methods?.length) return '<p class="none">なし</p>';
+    if (!methods?.length) return '<p class="none">None</p>';
     return `<ul>${methods.map(m => `<li>${m}</li>`).join('')}</ul>`;
 }
 
 function mybatisHtml(mb?: MyBatisReport): string {
-    if (!mb) return '<p class="none">なし</p>';
+    if (!mb) return '<p class="none">None</p>';
     const unmapped = mb.unmappedMethods?.length
-        ? `<h4>⚠ XML 未対応メソッド (${mb.unmappedMethods.length})</h4>
+        ? `<h4>⚠ Unmapped Methods (${mb.unmappedMethods.length})</h4>
            <ul>${mb.unmappedMethods.map(m => `<li class="warn">${m}</li>`).join('')}</ul>` : '';
     const mappers = (mb.xmlMappers ?? []).map(xm => {
         const rows = (xm.statements ?? []).map(s => {
@@ -194,10 +194,10 @@ function mybatisHtml(mb?: MyBatisReport): string {
               <td>${s.resultType || '-'}</td>
             </tr>`;
         }).join('');
-        return `<details><summary><b>${xm.namespace}</b> (${xm.statements?.length ?? 0} 件)</summary>
+        return `<details><summary><b>${xm.namespace}</b> (${xm.statements?.length ?? 0} statements)</summary>
           <table><thead><tr>
-            <th>id</th><th>種別</th>
-            <th>JOIN</th><th>サブクエリ</th><th>UNION</th>
+            <th>ID</th><th>Type</th>
+            <th>JOIN</th><th>Subquery</th><th>UNION</th>
             <th>&lt;if&gt;</th><th>&lt;foreach&gt;</th><th>&lt;choose&gt;</th>
             <th>resultType</th>
           </tr></thead><tbody>${rows}</tbody></table>
@@ -232,12 +232,12 @@ function classTablesHtml(classes?: ClassReport[]): string {
         }).join('');
         return `<h4>${cls.scope} ${cls.kind} <b>${cls.className}</b> (L${cls.startLine}–${cls.endLine})</h4>
                 <table><thead><tr>
-                  <th>メソッド</th><th>種別</th><th>スコープ</th>
-                  <th>開始行</th><th>行数</th><th>ネスト深度</th>
-                  <th>ローカル変数</th><th>ラムダ</th><th>チェーン深度</th>
-                  <th>外部呼出</th><th>カテゴリ</th>
-                  <th>IO副作用</th><th>Optional.get</th>
-                  <th>マジック数</th><th>代入ブロック</th><th>参照数</th>
+                  <th>Method</th><th>Type</th><th>Scope</th>
+                  <th>Start Line</th><th>Line Count</th><th>Nesting Depth</th>
+                  <th>Local Vars</th><th>Lambdas</th><th>Chain Depth</th>
+                  <th>External Calls</th><th>Categories</th>
+                  <th>IO Side Effects</th><th>Optional.get</th>
+                  <th>Magic Numbers</th><th>Assignment Blocks</th><th>References</th>
                 </tr></thead><tbody>${rows}</tbody></table>
                 ${prefixClustersHtml(cls.prefixClusters)}`;
     }).join('');
@@ -248,20 +248,20 @@ function prefixClustersHtml(clusters?: PrefixCluster[]): string {
     const rows = clusters.map(c =>
         `<tr><td><b>${c.prefix}</b></td><td>${c.identifiers?.join(', ')}</td></tr>`
     ).join('');
-    return `<details><summary>プレフィックスクラスタ (${clusters.length})</summary>
-      <table><thead><tr><th>プレフィックス</th><th>識別子</th></tr></thead><tbody>${rows}</tbody></table>
+    return `<details><summary>Prefix Clusters (${clusters.length})</summary>
+      <table><thead><tr><th>Prefix</th><th>Identifiers</th></tr></thead><tbody>${rows}</tbody></table>
     </details>`;
 }
 
 function codeListHtml(items?: string[]): string {
-    if (!items?.length) return '<p class="none">なし</p>';
+    if (!items?.length) return '<p class="none">None</p>';
     return `<ul>${items.map(i => `<li><code>${i}</code></li>`).join('')}</ul>`;
 }
 
 function duplicateBlocksHtml(blocks?: DuplicateBlock[]): string {
-    if (!blocks?.length) return '<p class="none">なし</p>';
+    if (!blocks?.length) return '<p class="none">None</p>';
     return blocks.map(b =>
-        `<details><summary>${b.stmtCount} ステートメント — <code>${b.preview}</code> (${b.locations?.length ?? 0} 箇所)</summary>
+        `<details><summary>${b.stmtCount} statements — <code>${b.preview}</code> (${b.locations?.length ?? 0} locations)</summary>
          <ul>${(b.locations ?? []).map(l => `<li>${l}</li>`).join('')}</ul></details>`
     ).join('');
 }
@@ -285,6 +285,6 @@ function wrapHtml(body: string): string {
     </style></head><body>${body}</body></html>`;
 }
 
-// 旧 buildHtml は buildFileHtml に統合済み。後方互換のため残す。
+// Legacy: buildHtml was merged into buildFileHtml. Kept for backwards compatibility.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function buildHtml(r: FileReport): string { return buildFileHtml(r); }

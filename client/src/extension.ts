@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext): void {
         args: ['-jar', serverJar],
     };
 
-    // redhat.java の有無を確認して Java 定義ジャンプの有効化を決定
+    // Detect redhat.java and determine whether to enable Java definition jump
     const redhatInstalled = !!vscode.extensions.getExtension('redhat.java');
     const cfg = vscode.workspace.getConfiguration('javaAnalyzer');
     const javaDefMode = cfg.get<string>('javaDefinition', 'auto');
@@ -28,7 +28,7 @@ export function activate(context: vscode.ExtensionContext): void {
         (javaDefMode === 'auto' && !redhatInstalled);
 
     const documentSelector: LanguageClientOptions['documentSelector'] = [
-        // XML マッパーファイル（redhat.java と競合しないので常に対象）
+        // XML mapper files (no conflict with redhat.java, always included)
         { scheme: 'file', pattern: '**/mapper/**/*.xml' },
         { scheme: 'file', pattern: '**/mappers/**/*.xml' },
     ];
@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.commands.registerCommand('javaAnalyzer.analyzeFile', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
-                vscode.window.showWarningMessage('Java ファイルを開いてください。');
+                vscode.window.showWarningMessage('Please open a Java file.');
                 return;
             }
             const json = await client.sendRequest('workspace/executeCommand', {
@@ -69,18 +69,18 @@ export function activate(context: vscode.ExtensionContext): void {
                     MetricsPanel.show(report);
                 }
             } catch {
-                vscode.window.showErrorMessage(`Java Analyzer: 解析結果の解析に失敗しました`);
+                vscode.window.showErrorMessage(`Java Analyzer: Failed to parse analysis results`);
             }
         }),
 
         vscode.commands.registerCommand('javaAnalyzer.analyzeWorkspace', async () => {
             const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
             if (!root) {
-                vscode.window.showWarningMessage('ワークスペースを開いてください。');
+                vscode.window.showWarningMessage('Please open a workspace.');
                 return;
             }
             await vscode.window.withProgress(
-                { location: vscode.ProgressLocation.Notification, title: 'Java Analyzer: 解析中...' },
+                { location: vscode.ProgressLocation.Notification, title: 'Java Analyzer: Analyzing...' },
                 async () => {
                     const json = await client.sendRequest('workspace/executeCommand', {
                         command: 'javaAnalyzer/analyzeWorkspace',
@@ -94,13 +94,13 @@ export function activate(context: vscode.ExtensionContext): void {
                             MetricsPanel.showWorkspace(report);
                         }
                     } catch {
-                        vscode.window.showErrorMessage('Java Analyzer: 解析結果の解析に失敗しました');
+                        vscode.window.showErrorMessage('Java Analyzer: Failed to parse analysis results');
                     }
                 }
             );
         }),
 
-        // 疎通確認用（開発時のみ使用）
+        // Connectivity check (for development use only)
         vscode.commands.registerCommand('javaAnalyzer.ping', async () => {
             const result = await client.sendRequest('workspace/executeCommand', {
                 command: 'javaAnalyzer/ping',

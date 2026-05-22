@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Java の @Mapper インターフェースと MyBatis XML の namespace・statement id を照合する。
- * namespace の完全修飾名とシンプル名の両方でマッチを試みる。
+ * Correlates Java @Mapper interfaces with MyBatis XML namespaces and statement IDs.
+ * Attempts to match both fully qualified and simple names.
  */
 public class MapperCorrelator {
 
@@ -23,7 +23,7 @@ public class MapperCorrelator {
 
         if (javaMappers == null || javaMappers.isEmpty()) return report;
 
-        // namespace → XmlMapperReport マップ（完全修飾名＋シンプル名の両方）
+        // namespace → XmlMapperReport map (both FQN and simple names)
         Map<String, XmlMapperReport> nsMap = new HashMap<>();
         for (XmlMapperReport xml : report.xmlMappers) {
             if (xml.namespace != null && !xml.namespace.isEmpty()) {
@@ -35,7 +35,7 @@ public class MapperCorrelator {
         for (MapperInterfaceInfo javaMapper : javaMappers) {
             XmlMapperReport xmlMapper = nsMap.get(javaMapper.className);
             if (xmlMapper == null) {
-                report.unmappedMethods.add(javaMapper.className + ": XML マッパーが見つかりません");
+                report.unmappedMethods.add(javaMapper.className + ": XML mapper not found");
                 continue;
             }
 
