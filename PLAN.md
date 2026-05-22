@@ -313,7 +313,7 @@ SQL 複雑度指標：
   - `@NonNull` / `@NotNull` アノテーションが付いたパラメーターへの null リテラル渡し
   - MyBatis Mapper の戻り値（`selectOne` 等）を null チェックなしで使用しているケース
 
-- [ ] **出力メッセージの英語化**：サーバー・クライアント双方の出力メッセージをすべて英語に統一する
+- [x] **出力メッセージの英語化**：サーバー・クライアント双方の出力メッセージをすべて英語に統一する
   - Java サーバー側：warnings / error メッセージ（`FileReport.warnings`、`WorkspaceReport.warnings` に格納される文字列）
   - TypeScript クライアント側：`vscode.window.showWarningMessage` / `showErrorMessage` / `showInformationMessage` の表示文字列
   - WebView パネル（`metricsPanel.ts`）：テーブルヘッダー・ラベル・セクション見出し等の日本語テキスト
