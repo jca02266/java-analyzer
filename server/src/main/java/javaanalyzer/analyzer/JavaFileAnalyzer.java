@@ -18,6 +18,8 @@ import javaanalyzer.metrics.FileReport;
 import javaanalyzer.metrics.MethodMetrics;
 import javaanalyzer.metrics.ParameterInfo;
 import javaanalyzer.visitors.AssignmentBlockVisitor;
+import javaanalyzer.visitors.CognitiveComplexityVisitor;
+import javaanalyzer.visitors.CyclomaticComplexityVisitor;
 import javaanalyzer.visitors.EqualsTypeCheckVisitor;
 import javaanalyzer.visitors.ExternalCallVisitor;
 import javaanalyzer.visitors.LambdaStreamVisitor;
@@ -167,6 +169,16 @@ public class JavaFileAnalyzer {
         NullSafetyVisitor nullVisitor = new NullSafetyVisitor();
         callable.accept(nullVisitor, null);
         m.nullSafetyIssueCount = nullVisitor.getNullSafetyIssueCount();
+
+        // Cyclomatic Complexity
+        CyclomaticComplexityVisitor ccVisitor = new CyclomaticComplexityVisitor();
+        callable.accept(ccVisitor, null);
+        m.cyclomaticComplexity = ccVisitor.getComplexity();
+
+        // Cognitive Complexity
+        CognitiveComplexityVisitor cogVisitor = new CognitiveComplexityVisitor();
+        callable.accept(cogVisitor, null);
+        m.cognitiveComplexity = cogVisitor.getScore();
 
         // マジックナンバー
         Map<String, Integer> literalCounts = new HashMap<>();

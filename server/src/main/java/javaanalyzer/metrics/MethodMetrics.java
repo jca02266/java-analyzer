@@ -15,6 +15,8 @@ public class MethodMetrics {
     public int lambdaCount;
     public int maxMethodChainDepth;              // Stream チェーン深度の目安
     public int methodReferenceCount;
+    public int cyclomaticComplexity;             // McCabe's CC（初期値 1）
+    public int cognitiveComplexity;              // Cognitive Complexity（SonarSource）
     public int optionalDirectGet;                // Optional.get() 直呼び回数
     public int equalsTypeMismatchCount;           // Type mismatches in equals() calls
     public int nullSafetyIssueCount;              // Null literal passed to methods
