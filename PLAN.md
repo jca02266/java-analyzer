@@ -301,7 +301,7 @@ SQL 複雑度指標：
   - 例：`stringVar.equals(intVar)` → 型不一致として報告
   - 対象：`equals` / `equalsIgnoreCase` / `Objects.equals(a, b)`
 
-- [ ] **Thymeleaf / HTML / JavaScript 解析**：Spring Boot プロジェクトではビューレイヤーの解析も必要
+- [x] **Thymeleaf / HTML / JavaScript 解析**：Spring Boot プロジェクトではビューレイヤーの解析も必要 ✅ (完了)
   - Thymeleaf テンプレート（`*.html`）：`th:*` 属性の使用状況・Controller との対応付け（`th:href`/`th:action` のエンドポイント参照）
   - HTML：構造解析（DOM ツリー深度・インラインスクリプト検出）
   - JavaScript（`*.js` / `<script>` ブロック）：Ajax リクエスト先 URL と Controller エンドポイントとの照合
