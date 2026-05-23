@@ -1,15 +1,8 @@
 package javaanalyzer.thymeleaf;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,16 +66,15 @@ public class ThymeleafParser {
         info.inlineScriptCount = 0;
 
         try {
-            DocumentBuilder builder = createDocumentBuilder();
-            Document doc = builder.parse(new File(filePath));
-            Element root = doc.getDocumentElement();
+            Document doc = Jsoup.parse(new File(filePath), "UTF-8");
+            Element root = doc.selectFirst("html");
             if (root != null) {
                 info.maxDomDepth = calculateDomDepth(root);
-                info.formCount = countElements(doc, "form");
-                info.inlineScriptCount = countElements(doc, "script");
+                info.formCount = doc.select("form").size();
+                info.inlineScriptCount = doc.select("script").size();
             }
-        } catch (SAXException | IOException | ParserConfigurationException e) {
-            // Silently skip malformed HTML (Thymeleaf templates may not be valid XML)
+        } catch (IOException e) {
+            // Silently skip malformed HTML
         }
         return info;
     }
@@ -107,25 +99,13 @@ public class ThymeleafParser {
         return report;
     }
 
-    private DocumentBuilder createDocumentBuilder() throws ParserConfigurationException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        return factory.newDocumentBuilder();
-    }
-
-    private int calculateDomDepth(Node node) {
-        if (node.getNodeType() != Node.ELEMENT_NODE) return 0;
+    private int calculateDomDepth(Element element) {
         int maxChildDepth = 0;
-        NodeList children = node.getChildNodes();
-        for (int i = 0; i < children.getLength(); i++) {
-            int childDepth = calculateDomDepth(children.item(i));
+        for (Element child : element.children()) {
+            int childDepth = calculateDomDepth(child);
             maxChildDepth = Math.max(maxChildDepth, childDepth);
         }
         return 1 + maxChildDepth;
-    }
-
-    private int countElements(Document doc, String tagName) {
-        return doc.getElementsByTagName(tagName).getLength();
     }
 
     private String getAttributeType(int index) {
