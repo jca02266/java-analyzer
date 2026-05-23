@@ -46,12 +46,17 @@ interface SqlStatementInfo {
 }
 interface XmlMapperReport { filePath: string; namespace: string; statements: SqlStatementInfo[]; }
 interface MyBatisReport   { xmlMappers: XmlMapperReport[]; unmappedMethods: string[]; }
+interface ThymeleafLinkInfo { templatePath: string; href: string; linkType: string; line: number; resolvedEndpoint?: string; }
+interface HtmlStructureInfo { templatePath: string; maxDomDepth: number; formCount: number; inlineScriptCount: number; }
+interface JsAjaxCallInfo    { sourcePath: string; url: string; method: string; line: number; resolvedEndpoint?: string; }
+interface ThymeleafReport   { links: ThymeleafLinkInfo[]; structures: HtmlStructureInfo[]; ajaxCalls: JsAjaxCallInfo[]; unresolvedLinks: string[]; unresolvedAjaxCalls: string[]; }
 interface CallEdge       { from: string; to: string; resolved: boolean; }
 interface DuplicateBlock { stmtCount: number; preview: string; locations: string[]; }
 interface WorkspaceReport {
     files: FileReport[];
     springReport: SpringReport;
     mybatisReport: MyBatisReport;
+    thymeleafReport: ThymeleafReport;
     warnings: string[];
     callGraph: CallEdge[];
     deadCodeCandidates: string[];
@@ -127,6 +132,15 @@ function buildWorkspaceHtml(r: WorkspaceReport): string {
 
         <h3>💾 @Transactional Methods (${sp?.transactionalMethods?.length ?? 0})</h3>
         ${transactionalHtml(sp?.transactionalMethods)}
+
+        <h3>🍃 Thymeleaf Links (${r.thymeleafReport?.links?.length ?? 0})</h3>
+        ${thymeleafLinksHtml(r.thymeleafReport?.links)}
+
+        <h3>🏗 HTML Structure (${r.thymeleafReport?.structures?.length ?? 0})</h3>
+        ${htmlStructureHtml(r.thymeleafReport?.structures)}
+
+        <h3>⚡ JavaScript Ajax Calls (${r.thymeleafReport?.ajaxCalls?.length ?? 0})</h3>
+        ${jsAjaxCallsHtml(r.thymeleafReport?.ajaxCalls)}
 
         <h3>🗄 MyBatis XML Mappers (${r.mybatisReport?.xmlMappers?.length ?? 0} files)</h3>
         ${mybatisHtml(r.mybatisReport)}
@@ -256,6 +270,38 @@ function prefixClustersHtml(clusters?: PrefixCluster[]): string {
 function codeListHtml(items?: string[]): string {
     if (!items?.length) return '<p class="none">None</p>';
     return `<ul>${items.map(i => `<li><code>${i}</code></li>`).join('')}</ul>`;
+}
+
+function thymeleafLinksHtml(links?: ThymeleafLinkInfo[]): string {
+    if (!links?.length) return '<p class="none">None</p>';
+    const rows = links.map(link => {
+        const resolved = link.resolvedEndpoint ? '' : ' class="high"';
+        return `<tr${resolved}>
+          <td>${link.templatePath}</td><td>${link.linkType}</td><td><code>${link.href}</code></td>
+          <td>${link.line}</td><td>${link.resolvedEndpoint || 'Unresolved'}</td></tr>`;
+    }).join('');
+    return `<table><thead><tr><th>Template</th><th>Type</th><th>Link</th><th>Line</th><th>Endpoint</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function htmlStructureHtml(structures?: HtmlStructureInfo[]): string {
+    if (!structures?.length) return '<p class="none">None</p>';
+    const rows = structures.map(s => {
+        const depthClass = s.maxDomDepth >= 8 ? ' class="high"' : '';
+        return `<tr${depthClass}>
+          <td>${s.templatePath}</td><td>${s.maxDomDepth}</td><td>${s.formCount}</td><td>${s.inlineScriptCount}</td></tr>`;
+    }).join('');
+    return `<table><thead><tr><th>Template</th><th>Max DOM Depth</th><th>Forms</th><th>Scripts</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function jsAjaxCallsHtml(calls?: JsAjaxCallInfo[]): string {
+    if (!calls?.length) return '<p class="none">None</p>';
+    const rows = calls.map(call => {
+        const resolved = call.resolvedEndpoint ? '' : ' class="high"';
+        return `<tr${resolved}>
+          <td>${call.sourcePath}</td><td>${call.method}</td><td><code>${call.url}</code></td>
+          <td>${call.line}</td><td>${call.resolvedEndpoint || 'Unresolved'}</td></tr>`;
+    }).join('');
+    return `<table><thead><tr><th>Source</th><th>Method</th><th>URL</th><th>Line</th><th>Endpoint</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function duplicateBlocksHtml(blocks?: DuplicateBlock[]): string {

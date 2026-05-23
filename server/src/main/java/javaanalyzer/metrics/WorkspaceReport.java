@@ -2,6 +2,7 @@ package javaanalyzer.metrics;
 
 import javaanalyzer.mybatis.MyBatisReport;
 import javaanalyzer.spring.SpringReport;
+import javaanalyzer.thymeleaf.ThymeleafReport;
 
 import java.util.List;
 
@@ -9,6 +10,7 @@ public class WorkspaceReport {
     public List<FileReport> files;
     public SpringReport springReport;
     public MyBatisReport mybatisReport;
+    public ThymeleafReport thymeleafReport;
     public List<String> warnings;
 
     // Phase 5

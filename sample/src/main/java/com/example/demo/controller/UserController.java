@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.User;
 import com.example.demo.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -54,5 +55,14 @@ public class UserController {
     public ResponseEntity<Void> deactivate(@PathVariable Long id) {
         userService.deactivate(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> search(@RequestParam(required = false) String q) {
+        if (q == null || q.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        List<User> results = userService.search(q, null, null);
+        return ResponseEntity.ok(results);
     }
 }

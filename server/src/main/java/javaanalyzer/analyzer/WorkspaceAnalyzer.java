@@ -12,6 +12,9 @@ import javaanalyzer.mybatis.MyBatisXmlParser;
 import javaanalyzer.mybatis.XmlMapperReport;
 import javaanalyzer.spring.SpringAnnotationVisitor;
 import javaanalyzer.spring.SpringReport;
+import javaanalyzer.thymeleaf.JsAnalyzer;
+import javaanalyzer.thymeleaf.ThymeleafParser;
+import javaanalyzer.thymeleaf.ViewLayerCorrelator;
 import javaanalyzer.visitors.CallCollector;
 import javaanalyzer.visitors.DuplicateBlockDetector;
 
@@ -85,6 +88,16 @@ public class WorkspaceAnalyzer {
         // Java Mapper ↔ XML 対応付け
         MapperCorrelator correlator = new MapperCorrelator();
         report.mybatisReport = correlator.correlate(xmlMappers, springReport.mapperInterfaces);
+
+        // Thymeleaf / HTML / JavaScript 解析
+        ThymeleafParser thymeleafParser = new ThymeleafParser();
+        JsAnalyzer jsAnalyzer = new JsAnalyzer();
+        ViewLayerCorrelator viewCorrelator = new ViewLayerCorrelator();
+        report.thymeleafReport = viewCorrelator.correlate(
+            thymeleafParser.parseWorkspace(workspacePath, report.warnings),
+            jsAnalyzer.analyzeWorkspace(workspacePath, report.warnings),
+            springReport.endpoints
+        );
 
         // Phase 5: コールグラフ構築
         CallGraphBuilder cgBuilder = new CallGraphBuilder();
