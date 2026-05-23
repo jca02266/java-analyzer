@@ -3,12 +3,14 @@ import * as vscode from 'vscode';
 interface ParameterInfo { name: string; type: string; }
 interface MethodMetrics {
     name: string; kind: string; scope: string;
-    startLine: number; endLine: number; lineCount: number;
+    startLine: number; endLine: number; lineCount: number; effectiveLineCount: number;
     maxNestDepth: number; localDeclCount: number;
     lambdaCount: number; maxMethodChainDepth: number;
     methodReferenceCount: number;
     referenceCount: number;
     optionalDirectGet: number;
+    equalsTypeMismatchCount: number;
+    nullSafetyIssueCount: number;
     externalCallCount: number;
     externalCallCategories: string[];
     ioSideEffectCount: number;
@@ -25,7 +27,7 @@ interface ClassReport {
     prefixClusters: PrefixCluster[];
 }
 interface FileReport {
-    filePath: string; totalLines: number;
+    filePath: string; totalLines: number; effectiveLines: number;
     classes: ClassReport[];
     warnings: string[];
 }
@@ -236,21 +238,21 @@ function classTablesHtml(classes?: ClassReport[]): string {
             const abCount   = m.assignmentBlocks?.length ?? 0;
             return `<tr>
               <td>${m.name}</td><td>${m.kind}</td><td>${m.scope}</td>
-              <td>${m.startLine}</td><td${lineClass}>${m.lineCount}</td>
+              <td>${m.startLine}</td><td${lineClass}>${m.lineCount}</td><td>${m.effectiveLineCount}</td>
               <td${nestClass}>${m.maxNestDepth}</td><td>${m.localDeclCount}</td>
               <td>${m.lambdaCount}</td><td>${m.maxMethodChainDepth}</td>
               <td${extClass}>${m.externalCallCount}</td><td>${cats}</td>
-              <td>${m.ioSideEffectCount}</td><td>${m.optionalDirectGet}</td>
-              <td>${magics}</td><td>${abCount}</td><td>${m.referenceCount ?? 0}</td>
+              <td>${m.ioSideEffectCount}</td><td>${m.optionalDirectGet}</td><td>${m.equalsTypeMismatchCount}</td>
+              <td>${m.nullSafetyIssueCount}</td><td>${magics}</td><td>${abCount}</td><td>${m.referenceCount ?? 0}</td>
             </tr>`;
         }).join('');
         return `<h4>${cls.scope} ${cls.kind} <b>${cls.className}</b> (L${cls.startLine}–${cls.endLine})</h4>
                 <table><thead><tr>
                   <th>Method</th><th>Type</th><th>Scope</th>
-                  <th>Start Line</th><th>Line Count</th><th>Nesting Depth</th>
+                  <th>Start Line</th><th>Line Count</th><th>Eff. Lines</th><th>Nesting Depth</th>
                   <th>Local Vars</th><th>Lambdas</th><th>Chain Depth</th>
                   <th>External Calls</th><th>Categories</th>
-                  <th>IO Side Effects</th><th>Optional.get</th>
+                  <th>IO Side Effects</th><th>Optional.get</th><th>Eq.Mismatch</th><th>Null Issues</th>
                   <th>Magic Numbers</th><th>Assignment Blocks</th><th>References</th>
                 </tr></thead><tbody>${rows}</tbody></table>
                 ${prefixClustersHtml(cls.prefixClusters)}`;

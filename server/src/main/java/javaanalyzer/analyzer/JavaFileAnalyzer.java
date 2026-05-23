@@ -18,10 +18,12 @@ import javaanalyzer.metrics.FileReport;
 import javaanalyzer.metrics.MethodMetrics;
 import javaanalyzer.metrics.ParameterInfo;
 import javaanalyzer.visitors.AssignmentBlockVisitor;
+import javaanalyzer.visitors.EqualsTypeCheckVisitor;
 import javaanalyzer.visitors.ExternalCallVisitor;
 import javaanalyzer.visitors.LambdaStreamVisitor;
 import javaanalyzer.visitors.MagicNumberVisitor;
 import javaanalyzer.visitors.NestDepthVisitor;
+import javaanalyzer.visitors.NullSafetyVisitor;
 import javaanalyzer.visitors.PrefixClusterDetector;
 
 import java.io.File;
@@ -68,7 +70,10 @@ public class JavaFileAnalyzer {
         }
 
         result.getProblems().forEach(p -> report.warnings.add(p.toString()));
-        result.getResult().ifPresent(cu -> populateReport(report, cu));
+        result.getResult().ifPresent(cu -> {
+            populateReport(report, cu);
+            report.effectiveLines = EffectiveLineCounter.countFile(cu, filePath);
+        });
         return report;
     }
 
@@ -79,6 +84,7 @@ public class JavaFileAnalyzer {
         report.classes  = new ArrayList<>();
         report.warnings = new ArrayList<>();
         populateReport(report, cu);
+        report.effectiveLines = EffectiveLineCounter.countFile(cu, filePath);
         return report;
     }
 
@@ -120,6 +126,7 @@ public class JavaFileAnalyzer {
         callable.getBegin().ifPresent(p -> m.startLine = p.line);
         callable.getEnd().ifPresent(p -> m.endLine = p.line);
         m.lineCount = m.endLine - m.startLine + 1;
+        m.effectiveLineCount = EffectiveLineCounter.countCallable(callable);
 
         if ("method".equals(kind)) {
             m.returnType = ((MethodDeclaration) callable).getTypeAsString();
@@ -150,6 +157,16 @@ public class JavaFileAnalyzer {
         m.externalCallCategories = extVisitor.getCategories();
         m.ioSideEffectCount      = extVisitor.getIoSideEffectCount();
         m.optionalDirectGet      = extVisitor.getOptionalDirectGet();
+
+        // equals() 型安全チェック
+        EqualsTypeCheckVisitor equalsVisitor = new EqualsTypeCheckVisitor();
+        callable.accept(equalsVisitor, null);
+        m.equalsTypeMismatchCount = equalsVisitor.getEqualsTypeMismatchCount();
+
+        // Null 安全チェック
+        NullSafetyVisitor nullVisitor = new NullSafetyVisitor();
+        callable.accept(nullVisitor, null);
+        m.nullSafetyIssueCount = nullVisitor.getNullSafetyIssueCount();
 
         // マジックナンバー
         Map<String, Integer> literalCounts = new HashMap<>();
