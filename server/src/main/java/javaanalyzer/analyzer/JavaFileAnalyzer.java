@@ -25,6 +25,7 @@ import javaanalyzer.visitors.ExternalCallVisitor;
 import javaanalyzer.visitors.LambdaStreamVisitor;
 import javaanalyzer.visitors.MagicNumberVisitor;
 import javaanalyzer.visitors.NestDepthVisitor;
+import javaanalyzer.visitors.NullDereferenceVisitor;
 import javaanalyzer.visitors.NullSafetyVisitor;
 import javaanalyzer.visitors.PrefixClusterDetector;
 
@@ -168,7 +169,13 @@ public class JavaFileAnalyzer {
         // Null 安全チェック
         NullSafetyVisitor nullVisitor = new NullSafetyVisitor();
         callable.accept(nullVisitor, null);
-        m.nullSafetyIssueCount = nullVisitor.getNullSafetyIssueCount();
+        m.nullLiteralCount = nullVisitor.getNullLiteralCount();
+        m.optionalOrElseNull = nullVisitor.getOptionalOrElseNull();
+
+        // Null 逆参照リスク検出
+        NullDereferenceVisitor derefVisitor = new NullDereferenceVisitor();
+        callable.accept(derefVisitor, null);
+        m.nullDereferenceRisk = derefVisitor.getNullDereferenceRisk();
 
         // Cyclomatic Complexity
         CyclomaticComplexityVisitor ccVisitor = new CyclomaticComplexityVisitor();

@@ -10,7 +10,9 @@ interface MethodMetrics {
     referenceCount: number;
     optionalDirectGet: number;
     equalsTypeMismatchCount: number;
-    nullSafetyIssueCount: number;
+    nullLiteralCount: number;
+    nullDereferenceRisk: number;
+    optionalOrElseNull: number;
     cyclomaticComplexity: number;
     cognitiveComplexity: number;
     externalCallCount: number;
@@ -245,7 +247,7 @@ function classTablesHtml(classes?: ClassReport[]): string {
               <td>${m.lambdaCount}</td><td>${m.maxMethodChainDepth}</td>
               <td${extClass}>${m.externalCallCount}</td><td>${cats}</td>
               <td>${m.ioSideEffectCount}</td><td>${m.optionalDirectGet}</td><td>${m.equalsTypeMismatchCount}</td>
-              <td>${m.nullSafetyIssueCount}</td><td>${magics}</td><td>${abCount}</td><td>${m.referenceCount ?? 0}</td>
+              <td>${m.nullLiteralCount}</td><td>${m.nullDereferenceRisk}</td><td>${m.optionalOrElseNull}</td><td>${magics}</td><td>${abCount}</td><td>${m.referenceCount ?? 0}</td>
             </tr>`;
         }).join('');
         return `<h4>${cls.scope} ${cls.kind} <b>${cls.className}</b> (L${cls.startLine}–${cls.endLine})</h4>
@@ -254,7 +256,7 @@ function classTablesHtml(classes?: ClassReport[]): string {
                   <th>Start Line</th><th>Line Count</th><th>Eff. Lines</th><th>Nesting Depth</th><th>CC</th><th>CogC</th>
                   <th>Local Vars</th><th>Lambdas</th><th>Chain Depth</th>
                   <th>External Calls</th><th>Categories</th>
-                  <th>IO Side Effects</th><th>Optional.get</th><th>Eq.Mismatch</th><th>Null Issues</th>
+                  <th>IO Side Effects</th><th>Optional.get</th><th>Eq.Mismatch</th><th>Null Literal</th><th>Null Deref</th><th>OrElse(null)</th>
                   <th>Magic Numbers</th><th>Assignment Blocks</th><th>References</th>
                 </tr></thead><tbody>${rows}</tbody></table>
                 ${prefixClustersHtml(cls.prefixClusters)}`;
