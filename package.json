@@ -84,6 +84,7 @@
     "bundle": "webpack --mode production",
     "watch": "webpack --watch --mode development",
     "package": "npm run vscode:prepublish && vsce package",
-    "install-extension": "npm run package && code --install-extension java-analyzer-0.0.1.vsix"
+    "install-extension": "npm run package && code --install-extension java-analyzer-0.0.1.vsix",
+    "build": "cd server && mvn package -DskipTests && cd .. && npm run install-extension"
   }
 }
