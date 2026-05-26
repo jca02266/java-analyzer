@@ -8,6 +8,7 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -109,7 +110,8 @@ public class WorkspaceIndex {
     // ------------------------------------------------------------------
 
     private static Location makeLocation(String filePath, int line0) {
-        String uri = filePath.startsWith("file:") ? filePath : "file://" + filePath;
+        String uri = filePath.startsWith("file:") ? filePath
+                : Paths.get(filePath).toAbsolutePath().toUri().toString();
         Position pos = new Position(line0, 0);
         return new Location(uri, new Range(pos, pos));
     }

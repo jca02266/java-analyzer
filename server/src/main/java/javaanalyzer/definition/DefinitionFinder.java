@@ -203,10 +203,10 @@ public class DefinitionFinder {
         return node.getBegin().flatMap(begin ->
             node.findCompilationUnit().flatMap(cu ->
                 cu.getStorage().map(s -> {
-                    String path = s.getPath().toAbsolutePath().toString();
+                    String uri = s.getPath().toAbsolutePath().toUri().toString();
                     int line0 = begin.line - 1;
                     Position pos = new Position(line0, 0);
-                    return new Location("file://" + path, new Range(pos, pos));
+                    return new Location(uri, new Range(pos, pos));
                 })
             )
         );
