@@ -10,9 +10,12 @@ import { MetricsPanel } from './views/metricsPanel';
 let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext): void {
+    console.log('Java Analyzer extension activated');
+
     const serverJar = context.asAbsolutePath(
         path.join('server', 'target', 'java-analyzer-server-1.0-SNAPSHOT.jar')
     );
+    console.log('Server JAR path:', serverJar);
 
     const serverOptions: ServerOptions = {
         command: 'java',
@@ -71,8 +74,10 @@ export function activate(context: vscode.ExtensionContext): void {
             } catch {
                 vscode.window.showErrorMessage(`Java Analyzer: Failed to parse analysis results`);
             }
-        }),
+        })
+    );
 
+    context.subscriptions.push(
         vscode.commands.registerCommand('javaAnalyzer.analyzeWorkspace', async () => {
             const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
             if (!root) {
@@ -98,9 +103,10 @@ export function activate(context: vscode.ExtensionContext): void {
                     }
                 }
             );
-        }),
+        })
+    );
 
-        // Connectivity check (for development use only)
+    context.subscriptions.push(
         vscode.commands.registerCommand('javaAnalyzer.ping', async () => {
             const result = await client.sendRequest('workspace/executeCommand', {
                 command: 'javaAnalyzer/ping',
@@ -110,7 +116,13 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
-    client.start();
+    console.log('Registered 3 commands');
+    console.log('Starting Language Server...');
+    client.start().then(() => {
+        console.log('Language Server started successfully');
+    }).catch((err) => {
+        console.error('Language Server start failed:', err);
+    });
 }
 
 export function deactivate(): Thenable<void> | undefined {

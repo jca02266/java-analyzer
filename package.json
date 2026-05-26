@@ -4,9 +4,18 @@
   "description": "Static analysis for Spring Boot / MyBatis / Lombok Java projects",
   "version": "0.0.1",
   "publisher": "jca02266",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Other"],
-  "activationEvents": ["onLanguage:java"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:java",
+    "onCommand:javaAnalyzer.analyzeFile",
+    "onCommand:javaAnalyzer.analyzeWorkspace",
+    "onCommand:javaAnalyzer.ping"
+  ],
   "main": "./out/client/src/extension",
   "contributes": {
     "commands": [
@@ -17,6 +26,10 @@
       {
         "command": "javaAnalyzer.analyzeWorkspace",
         "title": "Java Analyzer: Analyze Workspace"
+      },
+      {
+        "command": "javaAnalyzer.ping",
+        "title": "Java Analyzer: Ping (Development)"
       }
     ],
     "configuration": {
@@ -25,7 +38,12 @@
         "javaAnalyzer.languageLevel": {
           "type": "string",
           "default": "JAVA_8",
-          "enum": ["JAVA_8", "JAVA_11", "JAVA_17", "JAVA_21"],
+          "enum": [
+            "JAVA_8",
+            "JAVA_11",
+            "JAVA_17",
+            "JAVA_21"
+          ],
           "description": "解析対象の Java 言語レベル"
         },
         "javaAnalyzer.lombokJarPath": {
@@ -36,7 +54,11 @@
         "javaAnalyzer.javaDefinition": {
           "type": "string",
           "default": "auto",
-          "enum": ["auto", "enabled", "disabled"],
+          "enum": [
+            "auto",
+            "enabled",
+            "disabled"
+          ],
           "enumDescriptions": [
             "redhat.java がインストールされていない場合のみ Java 定義ジャンプを有効化",
             "常に有効（redhat.java と共存、重複結果が出る場合あり）",
@@ -51,13 +73,16 @@
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.0.0",
+    "vsce": "^2.15.0"
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "package": "npm run vscode:prepublish && vsce package",
+    "install-extension": "npm run package && code --install-extension java-analyzer-0.0.1.vsix"
   }
 }
