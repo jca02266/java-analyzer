@@ -51,20 +51,17 @@ public class WorkspaceAnalyzer {
 
         List<CallEdge> allEdges = new ArrayList<>();
 
+        ParsedFileCache fileCache = ParsedFileCache.getInstance();
+
         for (Path path : javaFiles) {
             String filePath = path.toString();
-            ParseResult<CompilationUnit> result;
-            try {
-                result = fileAnalyzer.createParser().parse(new File(filePath));
-            } catch (Exception e) {
-                report.warnings.add("Parse error [" + filePath + "]: " + e.getMessage());
+            CompilationUnit cu = fileCache.get(filePath, fileAnalyzer.createParser());
+            if (cu == null) {
+                report.warnings.add("Parse error [" + filePath + "]: failed to parse");
                 continue;
             }
 
-            result.getProblems().forEach(p ->
-                    report.warnings.add("[" + filePath + "] " + p.toString()));
-
-            result.getResult().ifPresent(cu -> {
+            {
                 // ファイル解析（メトリクス）
                 FileReport fileReport = fileAnalyzer.analyze(cu, filePath);
                 report.files.add(fileReport);
@@ -75,7 +72,7 @@ public class WorkspaceAnalyzer {
                 // Phase 5: コール収集・重複検出
                 allEdges.addAll(callCollector.collect(cu));
                 cu.getTypes().forEach(dupDetector::index);
-            });
+            }
         }
 
         SpringReport springReport = springVisitor.buildReport();

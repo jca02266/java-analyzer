@@ -14,6 +14,7 @@ import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParse
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserMethodDeclaration;
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserVariableDeclaration;
 import javaanalyzer.analyzer.JavaFileAnalyzer;
+import javaanalyzer.analyzer.ParsedFileCache;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
@@ -50,13 +51,7 @@ public class DefinitionFinder {
         JavaFileAnalyzer analyzer = new JavaFileAnalyzer(
                 index.getLanguageLevel(), index.getWorkspacePath());
 
-        CompilationUnit cu;
-        try {
-            cu = analyzer.createParser().parse(new File(filePath))
-                    .getResult().orElse(null);
-        } catch (Exception e) {
-            return Collections.emptyList();
-        }
+        CompilationUnit cu = ParsedFileCache.getInstance().get(filePath, analyzer.createParser());
         if (cu == null) return Collections.emptyList();
 
         // JavaParser は 1-based
