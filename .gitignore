@@ -1,4 +1,5 @@
 node_modules/
+.java-analyzer/
 out/
 server/target/
 sample/target/

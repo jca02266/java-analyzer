@@ -4,12 +4,31 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.types.ResolvedType;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Detects type mismatches in equals() / equalsIgnoreCase() / Objects.equals() calls.
  * Type mismatches always evaluate to false, indicating a likely bug.
  */
 public class EqualsTypeCheckVisitor extends VoidVisitorAdapter<Void> {
+
+    /** Holds position and type information for a detected mismatch. */
+    public static class Mismatch {
+        public final MethodCallExpr call;
+        public final String receiverType;
+        public final String argumentType;
+
+        Mismatch(MethodCallExpr call, String receiverType, String argumentType) {
+            this.call = call;
+            this.receiverType = receiverType;
+            this.argumentType = argumentType;
+        }
+    }
+
     private int equalsTypeMismatchCount = 0;
+    private final List<Mismatch> mismatches = new ArrayList<>();
 
     @Override
     public void visit(MethodCallExpr n, Void arg) {
@@ -43,6 +62,7 @@ public class EqualsTypeCheckVisitor extends VoidVisitorAdapter<Void> {
 
             if (isTypeMismatch(scopeType, argType)) {
                 equalsTypeMismatchCount++;
+                mismatches.add(new Mismatch(n, simpleName(scopeType), simpleName(argType)));
             }
         } catch (Exception ignored) {
             // SymbolSolver may fail; ignore and continue
@@ -61,6 +81,7 @@ public class EqualsTypeCheckVisitor extends VoidVisitorAdapter<Void> {
 
             if (isTypeMismatch(arg1Type, arg2Type)) {
                 equalsTypeMismatchCount++;
+                mismatches.add(new Mismatch(n, simpleName(arg1Type), simpleName(arg2Type)));
             }
         } catch (Exception ignored) {
             // SymbolSolver may fail; ignore and continue
@@ -125,5 +146,15 @@ public class EqualsTypeCheckVisitor extends VoidVisitorAdapter<Void> {
 
     public int getEqualsTypeMismatchCount() {
         return equalsTypeMismatchCount;
+    }
+
+    public List<Mismatch> getMismatches() {
+        return Collections.unmodifiableList(mismatches);
+    }
+
+    private String simpleName(ResolvedType t) {
+        String desc = t.describe();
+        int dot = desc.lastIndexOf('.');
+        return dot >= 0 ? desc.substring(dot + 1) : desc;
     }
 }

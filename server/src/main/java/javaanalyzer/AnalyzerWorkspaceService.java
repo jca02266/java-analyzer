@@ -7,9 +7,11 @@ import javaanalyzer.analyzer.WorkspaceAnalyzer;
 import javaanalyzer.definition.WorkspaceIndex;
 import javaanalyzer.metrics.FileReport;
 import javaanalyzer.metrics.WorkspaceReport;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
 import org.eclipse.lsp4j.ExecuteCommandParams;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
@@ -24,6 +26,12 @@ public class AnalyzerWorkspaceService implements WorkspaceService {
 
     public void connect(LanguageClient client) {
         this.client = client;
+    }
+
+    public void publishDiagnostics(String uri, List<Diagnostic> diagnostics) {
+        if (client != null) {
+            client.publishDiagnostics(new PublishDiagnosticsParams(uri, diagnostics));
+        }
     }
 
     @Override

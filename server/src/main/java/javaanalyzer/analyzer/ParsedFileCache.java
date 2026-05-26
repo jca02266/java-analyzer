@@ -6,6 +6,8 @@ import com.github.javaparser.ast.CompilationUnit;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -63,5 +65,12 @@ public class ParsedFileCache {
     /** キャッシュを全クリアする。 */
     public void clear() {
         cache.clear();
+    }
+
+    /** キャッシュ済みの全 CompilationUnit をスナップショットとして返す。 */
+    public Map<String, CompilationUnit> getAll() {
+        Map<String, CompilationUnit> result = new HashMap<>();
+        cache.forEach((path, entry) -> result.put(path, entry.cu));
+        return result;
     }
 }

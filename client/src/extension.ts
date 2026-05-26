@@ -12,6 +12,24 @@ import { MetricsPanel } from './views/metricsPanel';
 
 let client: LanguageClient;
 
+function saveReport(type: 'file' | 'workspace', data: object, workspaceRoot: string): string {
+    const dir = path.join(workspaceRoot, '.java-analyzer');
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    let maxSeq = 0;
+    try {
+        for (const f of fs.readdirSync(dir)) {
+            const m = f.match(/^report-(?:file|workspace)-(\d+)\.json$/);
+            if (m) { maxSeq = Math.max(maxSeq, parseInt(m[1], 10)); }
+        }
+    } catch {}
+    const seq = String(maxSeq + 1).padStart(3, '0');
+    const filename = `report-${type}-${seq}.json`;
+    fs.writeFileSync(path.join(dir, filename), JSON.stringify(data, null, 2), 'utf-8');
+    return path.join('.java-analyzer', filename);
+}
+
 export function activate(context: vscode.ExtensionContext): void {
     try {
     const outputChannel = vscode.window.createOutputChannel('Java Analyzer');
@@ -124,6 +142,11 @@ export function activate(context: vscode.ExtensionContext): void {
                     vscode.window.showErrorMessage(`Java Analyzer: ${report.error}`);
                 } else {
                     MetricsPanel.show(report);
+                    const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+                    if (root) {
+                        const saved = saveReport('file', report, root);
+                        vscode.window.showInformationMessage(`Java Analyzer: saved ${saved}`);
+                    }
                 }
             } catch {
                 vscode.window.showErrorMessage(`Java Analyzer: Failed to parse analysis results`);
@@ -152,6 +175,8 @@ export function activate(context: vscode.ExtensionContext): void {
                             vscode.window.showErrorMessage(`Java Analyzer: ${report.error}`);
                         } else {
                             MetricsPanel.showWorkspace(report);
+                            const saved = saveReport('workspace', report, root);
+                            vscode.window.showInformationMessage(`Java Analyzer: saved ${saved}`);
                         }
                     } catch {
                         vscode.window.showErrorMessage('Java Analyzer: Failed to parse analysis results');

@@ -19,13 +19,13 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
-import java.io.File;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -63,7 +63,15 @@ public class DefinitionFinder {
         List<Location> mapperDeclResult = findXmlForMapperDeclaration(cu, jpLine, jpCol);
         if (!mapperDeclResult.isEmpty()) return mapperDeclResult;
 
-        // ② メソッド呼び出しを解決
+        // ② クラス・インターフェース宣言の名前上 → 自身の定義
+        List<Location> classDeclResult = findClassDeclarationAt(cu, jpLine, jpCol);
+        if (!classDeclResult.isEmpty()) return classDeclResult;
+
+        // ③ メソッド宣言の名前上（非 @Mapper）→ 自身の定義
+        List<Location> methodDeclResult = findMethodDeclarationAt(cu, jpLine, jpCol);
+        if (!methodDeclResult.isEmpty()) return methodDeclResult;
+
+        // ④ メソッド呼び出しを解決（SymbolSolver + 名前フォールバック）
         //   @Mapper メソッドなら [Java 宣言, XML 定義]、それ以外は [Java 宣言]
         Optional<MethodCallExpr> mc = findNodeAt(cu, MethodCallExpr.class, jpLine, jpCol);
         if (mc.isPresent()) {
@@ -71,14 +79,14 @@ public class DefinitionFinder {
             if (!mcResult.isEmpty()) return mcResult;
         }
 
-        // ③ 変数・フィールド参照
+        // ⑤ 変数・フィールド参照
         Optional<NameExpr> nameExpr = findNodeAt(cu, NameExpr.class, jpLine, jpCol);
         if (nameExpr.isPresent()) {
             List<Location> nameResult = resolveNameExpr(nameExpr.get());
             if (!nameResult.isEmpty()) return nameResult;
         }
 
-        // ④ 型参照
+        // ⑥ 型参照（SymbolSolver + 名前フォールバック）
         return findNodeAt(cu, ClassOrInterfaceType.class, jpLine, jpCol)
                 .map(t -> resolveTypeRef(t))
                 .orElse(Collections.emptyList());
@@ -108,7 +116,34 @@ public class DefinitionFinder {
     }
 
     // ------------------------------------------------------------------
-    // ② メソッド呼び出しを解決
+    // ② クラス・インターフェース宣言名上 → 自身の位置
+    // ------------------------------------------------------------------
+
+    private List<Location> findClassDeclarationAt(CompilationUnit cu, int jpLine, int jpCol) {
+        return cu.findAll(ClassOrInterfaceDeclaration.class).stream()
+                .filter(c -> containsPosition(c.getName(), jpLine, jpCol))
+                .findFirst()
+                .flatMap(this::nodeToLocation)
+                .map(Collections::singletonList)
+                .orElse(Collections.emptyList());
+    }
+
+    // ------------------------------------------------------------------
+    // ③ メソッド宣言名上（非 @Mapper）→ 自身の位置
+    // ------------------------------------------------------------------
+
+    private List<Location> findMethodDeclarationAt(CompilationUnit cu, int jpLine, int jpCol) {
+        return cu.findAll(MethodDeclaration.class).stream()
+                .filter(m -> containsPosition(m.getName(), jpLine, jpCol))
+                .filter(m -> !isInMapperInterface(m))
+                .findFirst()
+                .flatMap(this::nodeToLocation)
+                .map(Collections::singletonList)
+                .orElse(Collections.emptyList());
+    }
+
+    // ------------------------------------------------------------------
+    // ④ メソッド呼び出しを解決
     //    @Mapper メソッド → [Java 宣言, XML 定義]
     //    それ以外         → [Java 宣言]
     // ------------------------------------------------------------------
@@ -138,7 +173,8 @@ public class DefinitionFinder {
 
             return results;
         } catch (Exception ignored) {}
-        return Collections.emptyList();
+        // SymbolSolver 失敗時: キャッシュ済み全ファイルから同名メソッドを検索
+        return findAllMethodsByName(mc.getNameAsString());
     }
 
     // ------------------------------------------------------------------
@@ -179,7 +215,8 @@ public class DefinitionFinder {
                 return nodeToLocation(wrapped).map(Collections::singletonList).orElse(Collections.emptyList());
             }
         } catch (Exception ignored) {}
-        return Collections.emptyList();
+        // SymbolSolver 失敗時: キャッシュ済み全ファイルから同名クラスを検索
+        return findAllClassesByName(t.getNameAsString());
     }
 
     // ------------------------------------------------------------------
@@ -226,6 +263,32 @@ public class DefinitionFinder {
         return n.getBegin().flatMap(b -> n.getEnd().map(e ->
             (e.line - b.line) * 10000 + (e.column - b.column)
         )).orElse(Integer.MAX_VALUE);
+    }
+
+    private List<Location> findAllClassesByName(String simpleName) {
+        List<Location> results = new ArrayList<>();
+        Map<String, CompilationUnit> all = ParsedFileCache.getInstance().getAll();
+        for (Map.Entry<String, CompilationUnit> e : all.entrySet()) {
+            for (ClassOrInterfaceDeclaration c : e.getValue().findAll(ClassOrInterfaceDeclaration.class)) {
+                if (simpleName.equals(c.getNameAsString())) {
+                    nodeToLocation(c).ifPresent(results::add);
+                }
+            }
+        }
+        return results;
+    }
+
+    private List<Location> findAllMethodsByName(String methodName) {
+        List<Location> results = new ArrayList<>();
+        Map<String, CompilationUnit> all = ParsedFileCache.getInstance().getAll();
+        for (Map.Entry<String, CompilationUnit> e : all.entrySet()) {
+            for (MethodDeclaration m : e.getValue().findAll(MethodDeclaration.class)) {
+                if (methodName.equals(m.getNameAsString())) {
+                    nodeToLocation(m).ifPresent(results::add);
+                }
+            }
+        }
+        return results;
     }
 
     private String uriToPath(String uri) {

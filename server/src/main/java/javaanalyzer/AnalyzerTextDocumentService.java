@@ -1,8 +1,13 @@
 package javaanalyzer;
 
+import com.github.javaparser.ast.CompilationUnit;
+import javaanalyzer.analyzer.JavaFileAnalyzer;
+import javaanalyzer.analyzer.ParsedFileCache;
 import javaanalyzer.definition.DefinitionFinder;
 import javaanalyzer.definition.WorkspaceIndex;
 import javaanalyzer.definition.XmlDefinitionFinder;
+import javaanalyzer.diagnostics.EqualsMismatchDetector;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
@@ -13,6 +18,8 @@ import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -57,13 +64,22 @@ public class AnalyzerTextDocumentService implements TextDocumentService {
     }
 
     @Override
-    public void didOpen(DidOpenTextDocumentParams params) {}
+    public void didOpen(DidOpenTextDocumentParams params) {
+        String uri = params.getTextDocument().getUri();
+        if (uri.endsWith(".java")) {
+            runDiagnostics(uri);
+        }
+    }
 
     @Override
     public void didChange(DidChangeTextDocumentParams params) {}
 
     @Override
-    public void didClose(DidCloseTextDocumentParams params) {}
+    public void didClose(DidCloseTextDocumentParams params) {
+        // Clear diagnostics when file is closed
+        workspaceService.publishDiagnostics(
+                params.getTextDocument().getUri(), Collections.emptyList());
+    }
 
     @Override
     public void didSave(DidSaveTextDocumentParams params) {
@@ -80,5 +96,30 @@ public class AnalyzerTextDocumentService implements TextDocumentService {
         CompletableFuture<?> next = CompletableFuture.runAsync(
                 () -> workspaceService.buildIndex(workspacePath));
         pendingReindex.set(next);
+
+        if (uri.endsWith(".java")) {
+            runDiagnostics(uri);
+        }
+    }
+
+    private void runDiagnostics(String uri) {
+        try {
+            String filePath = uriToPath(uri);
+            String langLevel = index.getLanguageLevel() != null ? index.getLanguageLevel() : "JAVA_11";
+            JavaFileAnalyzer analyzer = new JavaFileAnalyzer(langLevel, index.getWorkspacePath());
+            CompilationUnit cu = ParsedFileCache.getInstance().get(filePath, analyzer.createParser());
+            List<Diagnostic> diagnostics = cu != null
+                    ? new EqualsMismatchDetector().detect(cu)
+                    : Collections.emptyList();
+            workspaceService.publishDiagnostics(uri, diagnostics);
+        } catch (Exception ignored) {}
+    }
+
+    private String uriToPath(String uri) {
+        try {
+            return Paths.get(URI.create(uri)).toString();
+        } catch (Exception e) {
+            return uri.replaceFirst("^file://", "");
+        }
     }
 }
