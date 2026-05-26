@@ -1,5 +1,6 @@
 package javaanalyzer.definition;
 
+import javaanalyzer.mybatis.SqlStatementInfo;
 import javaanalyzer.mybatis.XmlMapperReport;
 import javaanalyzer.spring.MapperInterfaceInfo;
 import javaanalyzer.spring.SpringReport;
@@ -70,7 +71,7 @@ public class WorkspaceIndex {
                     : ns;
             MapperInterfaceInfo mi = mapperByClass.get(simpleClass);
 
-            for (var stmt : xm.statements) {
+            for (SqlStatementInfo stmt : xm.statements) {
                 // XML → Java
                 String xmlKey = ns + "#" + stmt.id;
                 if (mi != null && mi.filePath != null && mi.methodLines != null) {

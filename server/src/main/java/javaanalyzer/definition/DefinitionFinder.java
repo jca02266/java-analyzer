@@ -174,7 +174,7 @@ public class DefinitionFinder {
             com.github.javaparser.resolution.types.ResolvedType raw = t.resolve();
             if (!raw.isReferenceType()) return Collections.emptyList();
             ResolvedReferenceType resolved = raw.asReferenceType();
-            var decl = resolved.getTypeDeclaration().orElse(null);
+            com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration decl = resolved.getTypeDeclaration().orElse(null);
             if (decl instanceof com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserClassDeclaration) {
                 Node wrapped = ((com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserClassDeclaration) decl).getWrappedNode();
                 return nodeToLocation(wrapped).map(Collections::singletonList).orElse(Collections.emptyList());

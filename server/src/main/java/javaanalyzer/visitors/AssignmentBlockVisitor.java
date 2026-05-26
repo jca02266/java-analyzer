@@ -4,6 +4,7 @@ import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
@@ -79,7 +80,7 @@ public class AssignmentBlockVisitor {
 
     private StatKind classify(Statement stmt) {
         if (!(stmt instanceof ExpressionStmt)) return StatKind.OTHER;
-        var expr = ((ExpressionStmt) stmt).getExpression();
+        Expression expr = ((ExpressionStmt) stmt).getExpression();
         if (expr instanceof VariableDeclarationExpr) return StatKind.VAR_DECL;
         if (expr instanceof AssignExpr)               return StatKind.ASSIGN;
         return StatKind.OTHER;
