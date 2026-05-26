@@ -16,10 +16,18 @@ import org.eclipse.lsp4j.services.TextDocumentService;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class AnalyzerTextDocumentService implements TextDocumentService {
 
     private final WorkspaceIndex index = WorkspaceIndex.getInstance();
+    private final AnalyzerWorkspaceService workspaceService;
+    // Holds the running re-index future so a new save can cancel the previous one
+    private final AtomicReference<CompletableFuture<?>> pendingReindex = new AtomicReference<>();
+
+    public AnalyzerTextDocumentService(AnalyzerWorkspaceService workspaceService) {
+        this.workspaceService = workspaceService;
+    }
 
     @Override
     public CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> definition(
@@ -58,5 +66,19 @@ public class AnalyzerTextDocumentService implements TextDocumentService {
     public void didClose(DidCloseTextDocumentParams params) {}
 
     @Override
-    public void didSave(DidSaveTextDocumentParams params) {}
+    public void didSave(DidSaveTextDocumentParams params) {
+        String uri = params.getTextDocument().getUri();
+        if (!uri.endsWith(".java") && !uri.endsWith(".xml")) return;
+
+        String workspacePath = index.getWorkspacePath();
+        if (workspacePath == null) return;
+
+        // Cancel previous pending re-index and start a new one
+        CompletableFuture<?> prev = pendingReindex.getAndSet(null);
+        if (prev != null) prev.cancel(false);
+
+        CompletableFuture<?> next = CompletableFuture.runAsync(
+                () -> workspaceService.buildIndex(workspacePath));
+        pendingReindex.set(next);
+    }
 }

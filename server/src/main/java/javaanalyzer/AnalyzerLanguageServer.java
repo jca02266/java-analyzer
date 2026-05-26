@@ -22,8 +22,8 @@ public class AnalyzerLanguageServer implements LanguageServer, LanguageClientAwa
     private final AnalyzerWorkspaceService workspaceService;
 
     public AnalyzerLanguageServer() {
-        this.textDocumentService = new AnalyzerTextDocumentService();
         this.workspaceService = new AnalyzerWorkspaceService();
+        this.textDocumentService = new AnalyzerTextDocumentService(workspaceService);
     }
 
     @Override
