@@ -35,10 +35,23 @@ export function activate(context: vscode.ExtensionContext): void {
     outputChannel.appendLine('Server JAR: OK');
 
     try {
-        const javaVersion = execSync('java -version 2>&1').toString().trim();
-        outputChannel.appendLine(`Java: ${javaVersion}`);
+        const javaVerOutput = execSync('java -version 2>&1').toString().trim();
+        outputChannel.appendLine(`Java: ${javaVerOutput}`);
+        const match = javaVerOutput.match(/version "(\d+)(?:\.(\d+))?/);
+        if (match) {
+            let major = parseInt(match[1], 10);
+            if (major === 1) { major = parseInt(match[2], 10); } // 1.8 -> 8
+            if (major < 11) {
+                const msg = `Java 11 or later is required (found Java ${major}). lsp4j requires Java 11+. Please install JDK 11+.`;
+                outputChannel.appendLine(`ERROR: ${msg}`);
+                outputChannel.show(true);
+                vscode.window.showErrorMessage(`Java Analyzer: ${msg}`);
+                return;
+            }
+            outputChannel.appendLine(`Java version: ${major} (OK)`);
+        }
     } catch {
-        const msg = '"java" command not found. Please install JRE/JDK and add it to PATH.';
+        const msg = '"java" command not found. Please install JDK 11 or later and add it to PATH.';
         outputChannel.appendLine(`ERROR: ${msg}`);
         outputChannel.show(true);
         vscode.window.showErrorMessage(`Java Analyzer: ${msg}`);
