@@ -85,6 +85,6 @@
     "watch": "webpack --watch --mode development",
     "package": "npm run vscode:prepublish && vsce package",
     "install-extension": "npm run package && code --install-extension java-analyzer-0.0.1.vsix",
-    "build": "cd server && ./mvnw package -DskipTests && cd .. && npm run install-extension"
+    "build": "node scripts/build-server.js && npm run install-extension"
   }
 }
