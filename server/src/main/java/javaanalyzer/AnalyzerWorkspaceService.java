@@ -81,6 +81,20 @@ public class AnalyzerWorkspaceService implements WorkspaceService {
         }
     }
 
+    /** Called from initialize() to build the definition-jump index in the background. */
+    public void buildIndex(String workspacePath) {
+        try {
+            WorkspaceAnalyzer analyzer = new WorkspaceAnalyzer(workspacePath, "JAVA_8");
+            WorkspaceReport report = analyzer.analyze();
+            WorkspaceIndex idx = WorkspaceIndex.getInstance();
+            idx.setWorkspace(workspacePath, "JAVA_8");
+            idx.build(report.springReport,
+                      report.mybatisReport != null ? report.mybatisReport.xmlMappers : null);
+        } catch (Exception ignored) {
+            // Background index build: silently ignore failures
+        }
+    }
+
     @Override
     public void didChangeConfiguration(DidChangeConfigurationParams params) {}
 
