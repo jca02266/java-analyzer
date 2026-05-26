@@ -1,9 +1,12 @@
+import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 import * as vscode from 'vscode';
 import {
     LanguageClient,
     LanguageClientOptions,
     ServerOptions,
+    State,
 } from 'vscode-languageclient/node';
 import { MetricsPanel } from './views/metricsPanel';
 
@@ -11,9 +14,36 @@ let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext): void {
     try {
+    const outputChannel = vscode.window.createOutputChannel('Java Analyzer');
+    context.subscriptions.push(outputChannel);
+
     const serverJar = context.asAbsolutePath(
         path.join('server', 'target', 'java-analyzer-server-1.0-SNAPSHOT.jar')
     );
+
+    // Startup diagnostics written to the Output panel
+    outputChannel.appendLine('=== Java Analyzer startup ===');
+    outputChannel.appendLine(`Server JAR: ${serverJar}`);
+
+    if (!fs.existsSync(serverJar)) {
+        const msg = `Server JAR not found: ${serverJar}`;
+        outputChannel.appendLine(`ERROR: ${msg}`);
+        outputChannel.show(true);
+        vscode.window.showErrorMessage(`Java Analyzer: ${msg}`);
+        return;
+    }
+    outputChannel.appendLine('Server JAR: OK');
+
+    try {
+        const javaVersion = execSync('java -version 2>&1').toString().trim();
+        outputChannel.appendLine(`Java: ${javaVersion}`);
+    } catch {
+        const msg = '"java" command not found. Please install JRE/JDK and add it to PATH.';
+        outputChannel.appendLine(`ERROR: ${msg}`);
+        outputChannel.show(true);
+        vscode.window.showErrorMessage(`Java Analyzer: ${msg}`);
+        return;
+    }
 
     const serverOptions: ServerOptions = {
         command: 'java',
@@ -42,6 +72,7 @@ export function activate(context: vscode.ExtensionContext): void {
         synchronize: {
             fileEvents: vscode.workspace.createFileSystemWatcher('**/*.{java,xml}'),
         },
+        outputChannel,
     };
 
     client = new LanguageClient(
@@ -51,8 +82,20 @@ export function activate(context: vscode.ExtensionContext): void {
         clientOptions
     );
 
+    const assertRunning = (): boolean => {
+        if (client.state !== State.Running) {
+            vscode.window.showErrorMessage(
+                'Java Analyzer: server is not running. Check the Output panel (Java Analyzer) for details.',
+                'Show Output'
+            ).then(sel => { if (sel === 'Show Output') { outputChannel.show(true); } });
+            return false;
+        }
+        return true;
+    };
+
     context.subscriptions.push(
         vscode.commands.registerCommand('javaAnalyzer.analyzeFile', async () => {
+            if (!assertRunning()) { return; }
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 vscode.window.showWarningMessage('Please open a Java file.');
@@ -77,6 +120,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('javaAnalyzer.analyzeWorkspace', async () => {
+            if (!assertRunning()) { return; }
             const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
             if (!root) {
                 vscode.window.showWarningMessage('Please open a workspace.');
@@ -106,6 +150,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('javaAnalyzer.ping', async () => {
+            if (!assertRunning()) { return; }
             const result = await client.sendRequest('workspace/executeCommand', {
                 command: 'javaAnalyzer/ping',
                 arguments: [],
