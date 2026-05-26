@@ -110,7 +110,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.commands.registerCommand('javaAnalyzer.analyzeFile', async () => {
             if (!assertRunning()) { return; }
             const editor = vscode.window.activeTextEditor;
-            if (!editor) {
+            if (!editor || editor.document.languageId !== 'java') {
                 vscode.window.showWarningMessage('Please open a Java file.');
                 return;
             }
