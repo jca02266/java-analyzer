@@ -4,6 +4,11 @@
   "description": "Static analysis for Spring Boot / MyBatis / Lombok Java projects",
   "version": "0.0.1",
   "publisher": "jca02266",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jca02266/java-analyzer"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
