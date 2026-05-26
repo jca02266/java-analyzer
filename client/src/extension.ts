@@ -10,12 +10,10 @@ import { MetricsPanel } from './views/metricsPanel';
 let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext): void {
-    console.log('Java Analyzer extension activated');
-
+    try {
     const serverJar = context.asAbsolutePath(
         path.join('server', 'target', 'java-analyzer-server-1.0-SNAPSHOT.jar')
     );
-    console.log('Server JAR path:', serverJar);
 
     const serverOptions: ServerOptions = {
         command: 'java',
@@ -116,13 +114,15 @@ export function activate(context: vscode.ExtensionContext): void {
         })
     );
 
-    console.log('Registered 3 commands');
-    console.log('Starting Language Server...');
-    client.start().then(() => {
-        console.log('Language Server started successfully');
-    }).catch((err) => {
-        console.error('Language Server start failed:', err);
+    client.start().catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Java Analyzer: server failed - ${msg}`);
     });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Java Analyzer activation error: ${msg}`);
+        throw err;
+    }
 }
 
 export function deactivate(): Thenable<void> | undefined {
